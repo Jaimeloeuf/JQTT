@@ -2,6 +2,8 @@
 import paho.mqtt.subscribe as subscribe
 # Using the thread class to use threads and prevent the subscribe call from blocking.
 from threading import Thread
+# Random module used to generate the random and unique ID for the different threads
+import random
 
 # This is the prefix for all the topics.
 topic_prefix = "IOTP/grp4/channel/"
@@ -41,7 +43,7 @@ def sub(cb=new_Msg):
 	thread_name = None
 	while thread_name == None:
 		# Create a random ID
-		thread_name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(3))
+		thread_name = ''.join(random.choices(string.ascii_uppercase + string.digits, k=3))
 		# Check if the ID is unique
 		for name in sub_thread:
 			# If not unique, reset the thread name to None
@@ -52,8 +54,25 @@ def sub(cb=new_Msg):
 	thread = Thread(target=sub_wrapper, name=thread_name)
 	# Append this thread to the array of threads, to allow subscription to more than one topic.
 	sub_thread.append(thread)
+	# Allow the thread to auto terminate when the main thread/process is killed.
+	thread.daemon = True
+	# Start the thread after appending the thread to the array
+	thread.start()
+	# Return the thread created
+	return thread
+	# QUes: How would I stop the thread? Or how or when do I call the thread.join method?
 
-
+# Function to unsubscribe to a topic, by killing the thread stored in the sub_thread array
+def unsub(thread_name):
+	# Check for the name in the array
+	for name in sub_thread:
+		if thread_name == name:
+			# Stop the thread when found
+			sub_thread[name]._stop()
+			# Return true to indicate operation successful.
+			return True
+	# If no such thread with the given thread name is found, return false to indicate failure
+	return False # Should I raise and exception instead?
 
 """ Below is code to subscribe to multiple topics """
 # topics = ['#']
