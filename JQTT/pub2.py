@@ -1,10 +1,12 @@
 """ Dependencies """
 import paho.mqtt.client as mqtt
+import paho.mqtt.publish as publish
 
 # This is the prefix for all the topics.
-topic_prefix = "IOTP/grp4/channel/"
-# Global variable to store the topic name, default topic is here too
-topic = ""
+# topic_prefix = "IOTP/grp4/channel/"
+topic_prefix = "IOTP/"
+# Global variable to store the topic name, default topic is empty with a prefixed topic_prefix
+topic = topic_prefix + ""
 # Global variable to store the topic name, default broker is here too
 broker = "m2m.eclipse.org"
 # Global variable to store the port used, default port is created here
@@ -27,24 +29,60 @@ def set_topic(data):
 
 
 def pub(payload):
-    # Why when I use payload and broker here I dont need to use the global keyword??
-    # ^ Learn more about the global keyword usage.
-    print(broker, port, topic) # Try to see what is the port and broker used heres
-    publish.single(topic, payload, 1, hostname=broker) # Publish with a QoS of 1
+    # Publish with a QoS of 1
+    publish.single(topic, payload, 1, hostname=broker)
 
 
 def pub2(payload):
     client = mqtt.Client()
-    print(broker, port) # Try to see what is the port and broker used here
+    # mqtt.Client
+    print('broker', broker)
+    print('port', port)
+    print('topic', topic)
+    print('payload', payload)
+
     client.connect(broker, port)
+
     try:
+        print('publishing')
         client.publish(topic, payload)
     except:
         print("Publish Error!")
     else:
         client.disconnect()
 
+
+# The callback for when the client receives a CONNACK response from the server.
+def on_connect(client, userdata, rc):
+    print("Connected with result code "+str(rc))
+    # Subscribing in on_connect() means that if we lose the connection and
+    # reconnect then subscriptions will be renewed.
+    client.subscribe("$SYS/#")
+
+# The callback for when a PUBLISH message is received from the server.
+def on_message(client, userdata, msg):
+    print(msg.topic+" "+str(msg.payload))
+
+
+client = mqtt.Client()
+client.on_connect = on_connect
+client.on_message = on_message
+
+client.connect("iot.eclipse.org", 1883, 60)
+
+# Blocking call that processes network traffic, dispatches callbacks and
+# handles reconnecting.
+# Other loop*() functions are available that give a threaded interface and a
+# manual interface.
+client.loop_forever()
+
+
+
+
+
+
 if __name__ == "__main__":
-	# If module called as standalone module, run the example code below to demonstrate this MQTT client lib
+    # If module called as standalone module, run the example code below to demonstrate this MQTT client lib
     pub2('HELLOW')
+    print('published')
     # raise EnvironmentError
