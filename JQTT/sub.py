@@ -1,5 +1,7 @@
 """ Dependencies """
 import paho.mqtt.subscribe as subscribe
+# Using the thread class to use threads and prevent the subscribe call from blocking.
+from threading import Thread
 
 # This is the prefix for all the topics.
 topic_prefix = "IOTP/grp4/channel/"
@@ -27,10 +29,30 @@ def set_topic(data):
 def new_Msg(client, userdata, message):
     print("%s : %s" % (message.topic, message.payload))
 
+sub_thread = []
 
 # Subscribe to topic from broker in this module and use callback function provided or default new_Msg function.
 def sub(cb=new_Msg):
-    subscribe.callback(cb, topic, qos=1, hostname=broker)
+	# Inner function that will utilize the values form outer functions just fine thanks to closure
+	def sub_wrapper():
+		subscribe.callback(cb, topic, qos=1, hostname=broker)
+	
+	# Create a unique ID for the thread
+	thread_name = None
+	while thread_name == None:
+		# Create a random ID
+		thread_name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(3))
+		# Check if the ID is unique
+		for name in sub_thread:
+			# If not unique, reset the thread name to None
+			if thread_name == name:
+				thread_name = None
+
+	# Create the thread name with the wrapper function and the 'thread_name' UID
+	thread = Thread(target=sub_wrapper, name=thread_name)
+	# Append this thread to the array of threads, to allow subscription to more than one topic.
+	sub_thread.append(thread)
+
 
 
 """ Below is code to subscribe to multiple topics """
