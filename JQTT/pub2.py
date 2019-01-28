@@ -34,17 +34,10 @@ def pub(payload):
 
 
 def pub2(payload):
-    client = mqtt.Client()
     # mqtt.Client
-    print('broker', broker)
-    print('port', port)
-    print('topic', topic)
-    print('payload', payload)
-
+    client = mqtt.Client()
     client.connect(broker, port)
-
     try:
-        print('publishing')
         client.publish(topic, payload)
     except:
         print("Publish Error!")
@@ -61,8 +54,8 @@ def on_connect(client, userdata, rc):
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
+    print('In msg func')
     print(msg.topic+" "+str(msg.payload))
-
 
 client = mqtt.Client()
 client.on_connect = on_connect
@@ -74,15 +67,15 @@ client.connect("iot.eclipse.org", 1883, 60)
 # handles reconnecting.
 # Other loop*() functions are available that give a threaded interface and a
 # manual interface.
-client.loop_forever()
-
-
-
-
+# client.loop_forever()
+client.loop_start()
 
 
 if __name__ == "__main__":
-    # If module called as standalone module, run the example code below to demonstrate this MQTT client lib
-    pub2('HELLOW')
-    print('published')
-    # raise EnvironmentError
+    import time
+    while True:
+        # If module called as standalone module, run the example code below to demonstrate this MQTT client lib
+        pub2('HELLOW')
+        # print('published')
+        # raise EnvironmentError
+        time.sleep(3)

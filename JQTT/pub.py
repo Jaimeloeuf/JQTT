@@ -23,6 +23,8 @@ def set_topic(data):
     # Return topic for the function caller to use if needed.
     return topic
 
+# Call to set topic function to create the default topic combining the prefix.
+topic = set_topic(topic)
 
 def pub(payload):
     publish.single(topic, payload, 1, hostname=broker)
