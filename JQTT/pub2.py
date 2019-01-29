@@ -13,27 +13,40 @@ broker = "m2m.eclipse.org"
 port = 1883
 
 
-def set_broker(data):
-    # Function exposed to the other modules to set their own topics to publish to.
-    global broker
-    broker = data
 
-
-def set_topic(data):
-    # Function exposed to the other modules to set their own topics to publish to.
-    global topic
-    # Create the topic by prepending the prefix to the received data and saving inside the global topic variable
-    topic = topic_prefix + data
-    # Return topic for the function caller to use if needed.
-    return topic
-
+class Publisher:
+	def __init__(self):
+		self._client = mqtt.Client()
+		# self._client.connect
+		self._client.connect_async(broker, port)
+		self._client.loop_start()
+		self._client.message_callback_add()
+		# Set the retry timeout to be 5 seconds instead of the default 20 seconds
+		self._client.message_retry_set(5)
+		self._client.on_connect
+		self._client.on_disconnect
+		self._client.on_message
+		self._client.on_publish
+		self._client.on_subscribe
+		self._client.on_unsubscribe
+		self._client.publish()
+		self._client.qos
+		self._client.rc
+		# What is the below one for?
+		self._client.state
+		self._client.subscribe()
+		self._client.unsubscribe()
+		self._client.user_data_set()
+		self._client._do_on_publish
+		self._client._handle_connack
+		self._client._handle_on_message
+		self._client._handle_publish
+	
+	# Method to publish data
+	def push(self):
+		pass
 
 def pub(payload):
-    # Publish with a QoS of 1
-    publish.single(topic, payload, 1, hostname=broker)
-
-
-def pub2(payload):
     # mqtt.Client
     client = mqtt.Client()
     client.connect(broker, port)
@@ -46,29 +59,24 @@ def pub2(payload):
 
 
 # The callback for when the client receives a CONNACK response from the server.
-def on_connect(client, userdata, rc):
-    print("Connected with result code "+str(rc))
-    # Subscribing in on_connect() means that if we lose the connection and
-    # reconnect then subscriptions will be renewed.
-    client.subscribe("$SYS/#")
+# def on_connect(client, userdata, rc):
+#     print("Connected with result code "+str(rc))
+#     # Subscribing in on_connect() means that if we lose the connection and
+#     # reconnect then subscriptions will be renewed.
+#     client.subscribe("$SYS/#")
 
-# The callback for when a PUBLISH message is received from the server.
-def on_message(client, userdata, msg):
-    print('In msg func')
-    print(msg.topic+" "+str(msg.payload))
+# client = mqtt.Client()
+# client.on_connect = on_connect
+# client.on_message = on_message
 
-client = mqtt.Client()
-client.on_connect = on_connect
-client.on_message = on_message
-
-client.connect("iot.eclipse.org", 1883, 60)
+# client.connect("iot.eclipse.org", 1883, 60)
 
 # Blocking call that processes network traffic, dispatches callbacks and
 # handles reconnecting.
 # Other loop*() functions are available that give a threaded interface and a
 # manual interface.
 # client.loop_forever()
-client.loop_start()
+# client.loop_start()
 
 
 if __name__ == "__main__":
