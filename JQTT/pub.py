@@ -1,12 +1,13 @@
 """ Dependencies """
 import paho.mqtt.publish as publish
+from threading import Thread
 
-# This is the prefix for all the topics.
-topic_prefix = "IOTP/grp4/channel/"
-# Global variable to store the topic name, default topic is here too
-topic = ""
 # Global variable to store the topic name, default broker is here too
 broker = "m2m.eclipse.org"
+# Global variable to store the topic name, default topic is here too
+topic = ""
+# Global variable to store the transaction QoS, default value here.
+qos = 1
 
 
 def set_broker(data):
@@ -15,16 +16,27 @@ def set_broker(data):
     broker = data
 
 
-def set_topic(data):
+def set_topic(data=None):
     # Function exposed to the other modules to set their own topics to publish to.
     global topic
-    # Create the topic by prepending the prefix to the received data and saving inside the global topic variable
-    topic = topic_prefix + data
-    # Return topic for the function caller to use if needed.
-    return topic
+    topic = data
 
-# Call to set topic function to create the default topic combining the prefix.
-topic = set_topic(topic)
 
+def set_qos(data=None):
+    # Function exposed to the other modules to set their own topics to publish to.
+    global qos
+    qos = data
+
+
+# Function to just publish one message/payload at a time to the specified topic on the broker
 def pub(payload):
-    publish.single(topic, payload, 1, hostname=broker)
+    def publish_wrapper():
+        publish.single(topic, payload, qos, hostname=broker)
+    # Publish in a non-deamonic thread to finnish publish even if the main thread dies midway.
+    Thread(target=publish_wrapper).start()
+
+
+if __name__ == "__main__":
+    # If module called as standalone module, run the example code below to demonstrate this MQTT client lib
+    pub('helifgjs')  # Publish payload in seperate thread
+	# Publish will continue in the background even as the main thread exits.

@@ -1,42 +1,5 @@
-import time
-import paho.mqtt.client as mqtt
-
-mqtt_broker = "m2m.eclipse.org"
-topic_cpu = "IOTP/"
-
-def onMessage(client, userdata, message):
-    print("%s %s" % (message.topic, message.payload))
-
-
-def startMQTT():
-    my_mqtt = mqtt.Client()
-    my_mqtt.on_message = onMessage
-    my_mqtt.connect(mqtt_broker, port=1883)
-    my_mqtt.subscribe(topic_cpu, qos=1)
-    my_mqtt.loop_start()
-    print("Subscribed to topic")
-
-
-if __name__ == "__main__":
-    startMQTT()
-    while True:
-        print('chicken')
-        time.sleep(0.5)
-
-
-
-
-
-""" Below is code to subscribe to multiple topics """
-# topics = ['#']
-# m = subscribe.simple(topics, hostname="iot.eclipse.org", retained=False, msg_count=2)
-# for a in m:
-#     print(a.topic)
-#     print(a.payload)
-
-
-
-# Random and string module used to generate the random and unique ID for the different threads
+"""
+Random and string module used to generate the random and unique ID for the different threads
 import random
 import string
 
@@ -85,3 +48,4 @@ def unsub(thread_name):
             return True
     # If no such thread with the given thread name is found, return false to indicate failure
     return False # Should I raise and exception instead?
+"""
