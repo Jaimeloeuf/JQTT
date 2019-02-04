@@ -46,24 +46,56 @@ def new_Msg(client, userdata, message):
 
 subscriptions = []
 
+sub_thread = []
 
+# Subscribe to topic from broker in this module and use callback function provided or default new_Msg function.
 def sub(cb=new_Msg):
-    # Create a new client
-    client = mqtt.Client()
-    # Append the subscription to the array to allow more than one subscription.
-    # subscriptions.append(client)
-    # Add event handler /  callback function when there is a new incoming message.
-    client.on_message = cb
-    # Establish a connection with the broker using the default port. Note that this call is blocking
-    client.connect(broker, port=1883)
-    # After a successful connection, establish a subscription pipe with the broker to the specified topic
-    # Qos is currently 1, will create another function to allow overiding this.
-    client.subscribe(topic, qos=1)
-    # Put the blocking subscribe action into a daemonic thread based loop and return control to the main thread.
-    client.loop_start()
-    subscriptions.append(client)
-    # Debug statement.
-    print("Subscribed to topic: ", topic)
+    # Inner function that will utilize the values form outer functions just fine thanks to closure
+    def sub_wrapper():
+        subscribe.callback(cb, topic, qos=1, hostname=broker)
+    
+    # # Create a unique ID for the thread
+    # thread_name = None
+    # while thread_name == None:
+    #     # Create a random ID
+    #     thread_name = ''.join(random.choices(string.ascii_uppercase + string.digits, k=3))
+    #     # thread_name should be the topic instead which makes it easier to unsub
+    #     # Check if the ID is unique
+    #     for name in sub_thread:
+    #         # If not unique, reset the thread name to None
+    #         if thread_name == name:
+    #             thread_name = None
+
+    # # Create the thread name with the wrapper function and the 'thread_name' UID
+    # thread = Thread(target=sub_wrapper, name=thread_name)
+    # # Append this thread to the array of threads, to allow subscription to more than one topic.
+    # sub_thread.append(thread)
+    # # Allow the thread to auto terminate when the main thread/process is killed.
+    # thread.daemon = True
+    # # Start the thread after appending the thread to the array
+    # thread.start()
+    # # Return the thread created
+    # return thread
+
+    # sub_thread.append(Thread(target=sub_wrapper, daemon=True).start())
+
+    thread = Thread(target=sub_wrapper, daemon=True)
+    sub_thread.append(thread)
+    thread.start()
+
+
+# Function to unsubscribe to a topic, by killing the thread stored in the sub_thread array
+def unsub(thread_name):
+    # Check for the name in the array
+    for name in sub_thread:
+        if thread_name == name:
+            # Stop the thread when found
+            sub_thread[name]._stop()
+            # Return true to indicate operation successful.
+            return True
+    # If no such thread with the given thread name is found, return false to indicate failure
+    return False # Should I raise and exception instead?
+
 
 
 if __name__ == "__main__":
@@ -71,6 +103,7 @@ if __name__ == "__main__":
     from time import sleep
     # Threading library used to wait for daemons
     from Jevents import wait_for_daemons
+    from threading import enumerate
 
     # Set topic for subscription
     set_topic('IOTP/grp4/channel/')
@@ -88,18 +121,17 @@ if __name__ == "__main__":
     # Subscribe to te newly set topic
     sub(new_Msg2)
 
+    print(sub_thread)
+
+    print(enumerate())
+
     """ Blocking call on the main thread to prevent it from ending when there are still Daemonic
         threads running in the background such as the subscription services which are daemons. """
     # wait_for_daemons()
 
     """ Below is an alternative to using wait_for_daemons by keeping the main thread busy with an
         infinite loop printing out stuff to simulate other actions that can happen in the main thread """
-    
-    try:
-        while True:
-            # Print something to emulate the main thread doing something.
-            print('chicken')
-            sleep(0.8) # Blocking wait call.
-    except KeyboardInterrupt:
-        for sub in subscriptions:
-            sub.disconnect()        
+    # while True:
+    #     # Print something to emulate the main thread doing something.
+    #     print('chicken')
+    #     sleep(0.8) # Blocking wait call.

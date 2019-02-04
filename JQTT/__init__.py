@@ -1,7 +1,8 @@
 """ Dependencies """
-from JQTT.mqtt import get_broker, get_topic, set_broker, set_topic
-from JQTT.pub import pub
-from JQTT.sub import sub
+from .mqtt import get_broker, get_topic, set_broker, set_topic
+from .pub import pub
+from .sub import sub
+from .publisher import Publisher
 
 if __name__ == "__main__":
 	# If module called as standalone module, run the example code below to demonstrate this MQTT client lib

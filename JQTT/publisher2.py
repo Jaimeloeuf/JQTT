@@ -44,8 +44,8 @@ def connected(self, user_data, flags_dict, rc):
 class Publisher:
     """ Class to create a Publisher to a given topic, to allow user to create some sort of
         data output pipe/stream to the MQTT Broker. """
-        
-    def __init__(self, topic, qos=1, broker="m2m.eclipse.org", port=1883, retry_timeout=10, on_disconnect=disconnected, on_connect=None, on_publish=None):
+
+    def __init__(self, topic, qos=1, broker="m2m.eclipse.org", port=1833, retry_timeout=10, on_disconnect=disconnected, on_connect=None, on_publish=None):
         # Set the topic that this publisher publishes to, not directly accessible to user
         self._topic = topic
         # Set the QoS this publisher uses, not directly accessible to user
@@ -55,15 +55,11 @@ class Publisher:
 
         # Create a new mqtt client with input arguements and connect asynchrounously on a daemonic thread
         self._client = mqtt.Client()
-        # Connect to the broker in a seperate thread asynchronously
         self._client.connect_async(broker, port)
-        # Start a loop to allow some sort of 'message queue'
         self._client.loop_start()
 
         # Set the retry timeout to be 5 seconds instead of the default 20 seconds
         self._client.message_retry_set(retry_timeout)
-
-        # Set all the callback functions for the differen events
         self._client.on_disconnect = on_disconnect
 
         if on_connect == True:
@@ -79,20 +75,16 @@ class Publisher:
         elif on_publish != None:
             # If user passed in their own callback to run when data is published
             self._client.on_publish = on_publish
-
+        
     # Method to publish data
-    def pub(self, payload, topic=None):
+    def pub(self, payload):
         try:
-            # If the user did not call method with a topic, then use pre-defined topic
-            if topic == None:
-                topic = self._topic
-            self._client.publish(topic=topic, payload=payload, qos=self._qos)
+            self._client.publish(self._topic, payload=payload, qos=self._qos)
         except:
             print('ERR: Publish Error')
         # Return self reference to allow method call chainings.
         return self
 
-    @property
     def qos(self, qos=1):
         if qos < 0 or qos > 2:
             raise AttributeError
@@ -100,9 +92,13 @@ class Publisher:
         # Return self reference to allow method call chainings.
         return self
 
-    # Method to disconnect Publisher client from the broker
     def disconnect(self):
         self._client.disconnect()
+        # Return self reference to allow method call chainings.
+        return self
+
+    def connect(self):
+        self._client.connect(self._broker, self._port)
         # Return self reference to allow method call chainings.
         return self
 
@@ -112,27 +108,16 @@ class Publisher:
         return self
 
 
-    # Allow user to do Publisher(msg) to publish msg, where Publisher = Publisher('topic')
-    __call__ = pub
-    # Allow user to use < to publish   ==>  Publisher < 'msg'
-    __lt__ = pub
-
-
 if __name__ == "__main__":
     # If module called as standalone module, run the example code below to demonstrate this MQTT client lib
-    from time import sleep
-    
+    import time
+
     # Create a publisher, request for default handlers for on_connect and on_publish events.
-    dataPublisher = Publisher('IOTP/', on_connect=True, on_publish=True)
+    output_stream = Publisher('IOTP/', on_connect=True, on_publish=True)
 
     # Infinite publish loop
     while True:
-        # Publish the message with the 'pub' method
-        dataPublisher.pub('Hi', 'IOTP/')
-        sleep(1)
-        # Publish the message with the magic method __call__
-        dataPublisher('Hello')
-        sleep(1)
-        # Publish the message with the magic method __lt__
-        dataPublisher < 'world'
-        sleep(1)
+        output_stream.pub('Hello')
+        time.sleep(1)
+        output_stream.pub('world')
+        time.sleep(1)

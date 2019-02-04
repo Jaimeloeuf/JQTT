@@ -38,5 +38,8 @@ def pub(payload):
 
 if __name__ == "__main__":
     # If module called as standalone module, run the example code below to demonstrate this MQTT client lib
-    pub('helifgjs')  # Publish payload in seperate thread
-	# Publish will continue in the background even as the main thread exits.
+    # Set topic
+    set_topic('IOTP/')
+    # Publish payload in seperate thread
+    pub('helifgjs')
+    # Publish will continue in the background even as the main thread exits.
