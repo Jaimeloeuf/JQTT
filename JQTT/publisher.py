@@ -63,7 +63,7 @@ class Publisher:
         # Set the retry timeout to be 5 seconds instead of the default 20 seconds
         self._client.message_retry_set(retry_timeout)
 
-        # Set all the callback functions for the differen events
+        # Set all the callback functions for the different events
         self._client.on_disconnect = on_disconnect
 
         if on_connect == True:
@@ -128,8 +128,10 @@ if __name__ == "__main__":
     # Infinite publish loop
     while True:
         # Publish the message with the 'pub' method
-        dataPublisher.pub('Hi', 'IOTP/')
+		# The topic passed in as arguement is a one of Topic change.
+        dataPublisher.pub('Hi', 'IOTP/test')
         sleep(1)
+		# Subsequent publishes uses the same default topic set at Publisher creation
         # Publish the message with the magic method __call__
         dataPublisher('Hello')
         sleep(1)
