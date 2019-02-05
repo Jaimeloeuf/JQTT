@@ -81,7 +81,7 @@ if __name__ == "__main__":
     Note that if you are defining your own callback functions, make sure it accepts the same input parameters
     as the parameters shown in the example and default subscription on_message callback function, 'new_Msg' """
     def new_Msg2(client, userdata, message):
-        print('This is the new handler, msg is: ', str(message.payload))
+        print('This is the new handler, msg is: ', message.payload.decode()) # Decode the bytes array to UTF8
 
     # Set new topic for subscription
     set_topic('IOTP/grp4/channel/hellow')

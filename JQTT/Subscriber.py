@@ -52,6 +52,7 @@ class Subscription:
     """
 
     def __init__(self, topic, qos=1, broker="m2m.eclipse.org", port=1883, retry_timeout=10, on_message=None, on_disconnect=disconnected, on_connect=None):
+        # Store the topic of this subscription. Topic should not be changed by user.
         self._topic = topic
 
         # Create a new mqtt client with input arguements and connect asynchrounously on a daemonic thread
@@ -84,8 +85,21 @@ class Subscription:
             # If user passed in their own callback to run when data is received
             self.msg.on_set += on_message
 
+
+        # The callback function of the Client used to trigger other User set callback functions.
+        def new_Msg(self, client, userdata, message):
+            """ This is the only 'real' on_message callback.
+                This callback itself will set the message, which is a Watched variable.
+                Upon setting a value all the other callbacks will be ran.
+            """
+            # Set the message and let the Callback functions run
+            print(message.payload)
+            self.msg(message)
+            # (client, userdata, message)
+
         # Pass the 'Callback calling method' as the Callback function to the Client object
-        self._client.on_message = self.new_Msg
+        self._client.on_message = new_Msg
+        print('tp')
 
         # To test the line below.
         # self._client.on_message = new_Msg if on_message == True else on_message if on_message != None else None
@@ -95,17 +109,6 @@ class Subscription:
         self._client.subscribe(topic, qos=qos)
 
     
-    # Method used as the callback function of the Client to trigger other User set callback functions.
-    def new_Msg(self, client, userdata, message):
-        """ This is the only 'real' on_message callback.
-            This callback itself will set the message, which is a Watched variable.
-            Upon setting a value all the other callbacks will be ran.
-        """
-        # Set the message and let the Callback functions run
-        self.msg(message)
-        # self.msg(data)
-        # (client, userdata, message)
-
     # Method to add callbacks to run on new message
     def on_msg(self, cb):
         # Add the callback function, will be ran when message is set
@@ -140,17 +143,21 @@ class Subscription:
         return self
 
 
-def onMessage(client, userdata, message):
-    print("%s %s" % (message.topic, message.payload))
-
 
 if __name__ == "__main__":
     # If module called as standalone module, run the example code below to demonstrate this MQTT client lib
-    import time
+    from time import sleep
     from Jevents import wait_for_daemons
 
-    # Make a new Subscription, request for default handlers for on_connect and  events.
-    mSub = Subscription('IOTP/', on_connect=True, on_publish=True)
+    # Make a new Subscription, request for default handlers for on_connect and on_message events.
+    my_Subscription = Subscription('IOTP/', on_connect=True, on_message=True)
+    
+    # Define a inner Callback function
+    def onMessage(message):
+        print("%s %s" % (message.topic, message.payload))
+
+    # Pass the callback function to use for the subscription
+    my_Subscription.on_msg(onMessage)
 
     # The only thing you can do is add or delete callbacks.
 
@@ -160,7 +167,7 @@ if __name__ == "__main__":
 
     """ Below is an alternative to using wait_for_daemons by keeping the main thread busy with an
         infinite loop printing out stuff to simulate other actions that can happen in the main thread """
-    # while True:
-    #     # Print something to emulate the main thread doing something.
-    #     print('chicken')
-    #     sleep(0.8) # Blocking wait call.
+    while True:
+        # Print something to emulate the main thread doing something.
+        print('chicken')
+        sleep(0.8) # Blocking wait call.

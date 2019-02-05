@@ -11,21 +11,6 @@ def new_Msg(client, userdata, message):
     print(str(message.payload))  # Just print out the message body
 
 
-
-    """ Inner functions like this can also be used as the callback function for a subscription.
-    Note that if you are defining your own callback functions, make sure it accepts the same input parameters
-    as the parameters shown in the example and default subscription on_message callback function, 'new_Msg' """
-    def new_Msg2(client, userdata, message):
-        print('This is the new handler, msg is: ', str(message.payload))
-
-    # Set new topic for subscription
-    set_topic('IOTP/grp4/channel/hellow')
-    # Subscribe to te newly set topic
-    sub(new_Msg2)
-
-
-
-
 """
 Random and string module used to generate the random and unique ID for the different threads
 import random
