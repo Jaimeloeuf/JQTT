@@ -47,12 +47,9 @@ def connected(self, user_data, flags_dict, rc):
 
 
 class Subscription:
-    """ Class to create a Publisher to a given topic, to allow user to create some sort of
-        data output pipe/stream to the MQTT Broker.
-
-
-        The only thing you can do is add or delete callbacks.
-
+    """ Class to make a Subscription to a topic, allowing user to create some sort of
+        data input pipe/stream from the MQTT Broker.
+        The only actions allowed on the subscription after subscribing is add or delete callbacks.
         After the subscription is established, the topic, broker, port, QOS cannot, CANNOT be changed.
     """
 
@@ -81,7 +78,9 @@ class Subscription:
             self._client.on_connect = on_connect
 
         # # Create a watched variable to store the incoming message in
-        self.msg = Watch(None)
+        self.msg = Watch()
+        # Create a magic Method/Property binder to add callbacks to run on new message
+        self.on_message = self.msg.on_set
 
         if on_message == True:
             # If User wants a on_message callback but did not pass in any, use the default handler
@@ -103,7 +102,6 @@ class Subscription:
 
         # # Pass the 'Callback calling method' as the Callback function to the Client object
         self._client.on_message = new_Msg
-        # self._client.on_message = print_msg
 
         # To test the line below.
         # self._client.on_message = new_Msg if on_message == True else on_message if on_message != None else None
@@ -124,14 +122,6 @@ class Subscription:
 
         # After setting up everything, subscribe to the topic
         self._client.subscribe(topic, qos=qos)
-
-    # Method to add callbacks to run on new message
-    def on_msg(self, *callbacks):
-        # Add the callback functions to ran when message is set
-        for cb in callbacks:
-            self.msg.on_set += cb
-        # Return self reference to allow method call chainings.
-        return self
 
     # @property # See if this works
     def qos(self, qos=1):
@@ -180,7 +170,11 @@ if __name__ == "__main__":
         print("This is the third cb %s" % (message.payload.decode()))
 
     # Pass the callback functions to the Subscriber to use for the subscription
-    my_Subscription.on_msg(onMessage2, onMessage3)
+    # Pass the callback functions using the method call. Pass in one by one
+    my_Subscription.on_message(onMessage2)
+    my_Subscription.on_message(onMessage3)
+    # Pass the callback functions as a tuple using the magic method binding
+    my_Subscription.on_message += onMessage2, onMessage3
 
     def signal_handler(signal, frame):
         print("Program interrupted!")
@@ -193,9 +187,8 @@ if __name__ == "__main__":
     # Pass in the signal_handler to run when the INTerrupt signal is received
     signal.signal(signal.SIGINT, signal_handler)
 
-    """ Below is an alternative to using wait_for_daemons by keeping the main thread busy with an
-        infinite loop printing out stuff to simulate other actions that can happen in the main thread """
+    # infinite loop printing out stuff to simulate actions happening in the main thread
     while True:
         # Print something to emulate the main thread doing something.
         print('chicken')
-        sleep(0.8)  # Blocking wait call.
+        sleep(1)  # Blocking wait call.
