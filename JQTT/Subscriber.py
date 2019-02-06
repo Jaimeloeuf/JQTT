@@ -18,14 +18,16 @@ def disconnected(self, user_data, rc):
 
 
 # Default callback function for new message event
-def print_msg(client, userdata, message):
+# def print_msg(client, userdata, message):
+def print_msg(message):
     """ Arguements passed in by the subscription service:
         client: The MQTT client object
         user_data: User data that was included in the message payload
         message: The message that was received
     """
     # print("%s : %s" % (message.topic, message.payload))
-    print(str(message.payload))  # Just print out the message body
+    # Just print out the message body
+    print('This default', message.payload.decode())
 
 
 # The default callback for when the client receives a CONACK response from the server.
@@ -40,14 +42,17 @@ def connected(self, user_data, flags_dict, rc):
         *Note:  Subscribing to on_connect means that if we lose the connection
                 and reconnect then subscriptions will be renewed.
     """
-    print(f'Client successfully connected to the Broker "{self._host}" with result code {str(rc)}')
+    print(
+        f'Client successfully connected to the Broker "{self._host}" with result code {str(rc)}')
 
 
 class Subscription:
     """ Class to create a Publisher to a given topic, to allow user to create some sort of
         data output pipe/stream to the MQTT Broker.
-        
-        
+
+
+        The only thing you can do is add or delete callbacks.
+
         After the subscription is established, the topic, broker, port, QOS cannot, CANNOT be changed.
     """
 
@@ -57,9 +62,9 @@ class Subscription:
 
         # Create a new mqtt client with input arguements and connect asynchrounously on a daemonic thread
         self._client = mqtt.Client()
-        # Connect to the broker in a seperate thread asynchronously
-        self._client.connect_async(broker, port)
-        # Start a loop to allow some sort of 'message queue'
+        # Connect to the broker with the blocking connect method, as connect_async does not work properly
+        self._client.connect(broker, port)
+        # Start the sub loop
         self._client.loop_start()
 
         # Set the retry timeout to be 5 seconds instead of the default 20 seconds
@@ -75,7 +80,7 @@ class Subscription:
             # If user passed in their own callback to run when data is published
             self._client.on_connect = on_connect
 
-        # Create a watched variable to store the incoming message in
+        # # Create a watched variable to store the incoming message in
         self.msg = Watch(None)
 
         if on_message == True:
@@ -85,34 +90,46 @@ class Subscription:
             # If user passed in their own callback to run when data is received
             self.msg.on_set += on_message
 
-
         # The callback function of the Client used to trigger other User set callback functions.
-        def new_Msg(self, client, userdata, message):
+        def new_Msg(client, userdata, message):
             """ This is the only 'real' on_message callback.
                 This callback itself will set the message, which is a Watched variable.
                 Upon setting a value all the other callbacks will be ran.
             """
             # Set the message and let the Callback functions run
-            print(message.payload)
             self.msg(message)
+            # Fix the Watch class to allow passing in more than one arguement to the Callbacks
             # (client, userdata, message)
 
-        # Pass the 'Callback calling method' as the Callback function to the Client object
+        # # Pass the 'Callback calling method' as the Callback function to the Client object
         self._client.on_message = new_Msg
-        print('tp')
+        # self._client.on_message = print_msg
 
         # To test the line below.
         # self._client.on_message = new_Msg if on_message == True else on_message if on_message != None else None
 
+        # Default callback function for on_subscribe event
+        def subscribed(*args):
+            print(f'Successfully subscribed to: "{self._topic}"')
+
+        # Add the callback function for the subscribed event
+        self._client.on_subscribe = subscribed
+
+        # Default callback function for on_subscribe event
+        def unsubscribed(*args):
+            print(f'Successfully unsubscribed from: "{self._topic}"')
+
+        # Add the callback function for the unsubscribed event
+        self._client.on_unsubscribe = unsubscribed
 
         # After setting up everything, subscribe to the topic
         self._client.subscribe(topic, qos=qos)
 
-    
     # Method to add callbacks to run on new message
-    def on_msg(self, cb):
-        # Add the callback function, will be ran when message is set
-        self.msg.on_set(cb)
+    def on_msg(self, *callbacks):
+        # Add the callback functions to ran when message is set
+        for cb in callbacks:
+            self.msg.on_set += cb
         # Return self reference to allow method call chainings.
         return self
 
@@ -130,6 +147,7 @@ class Subscription:
         # Return self reference to allow method call chainings.
         return self
 
+    # Method to disconnect from the Broker
     def disconnect(self):
         # Unsubscribe first before disconnecting.
         self.unsub()
@@ -137,37 +155,47 @@ class Subscription:
         # Return self reference to allow method call chainings.
         return self
 
+    # Method to reconnect to the Broker
     def reconnect(self):
         self._client.reconnect()
         # Return self reference to allow method call chainings.
         return self
 
 
-
 if __name__ == "__main__":
     # If module called as standalone module, run the example code below to demonstrate this MQTT client lib
     from time import sleep
     from Jevents import wait_for_daemons
+    import signal
 
     # Make a new Subscription, request for default handlers for on_connect and on_message events.
     my_Subscription = Subscription('IOTP/', on_connect=True, on_message=True)
+
+    # Define a inner Callback function
+    def onMessage2(message):
+        print("This is the second cb %s" % (message.payload.decode()))
     
     # Define a inner Callback function
-    def onMessage(message):
-        print("%s %s" % (message.topic, message.payload))
+    def onMessage3(message):
+        print("This is the third cb %s" % (message.payload.decode()))
 
-    # Pass the callback function to use for the subscription
-    my_Subscription.on_msg(onMessage)
+    # Pass the callback functions to the Subscriber to use for the subscription
+    my_Subscription.on_msg(onMessage2, onMessage3)
 
-    # The only thing you can do is add or delete callbacks.
+    def signal_handler(signal, frame):
+        print("Program interrupted!")
+        # Disconnect
+        my_Subscription.disconnect()
+        # Blocking call on main thread to wait for the disconnect to finnish first
+        wait_for_daemons()
+        exit(0)
 
-    """ Blocking call on the main thread to prevent it from ending when there are still Daemonic
-        threads running in the background such as the subscription services which are daemons. """
-    # wait_for_daemons()
+    # Pass in the signal_handler to run when the INTerrupt signal is received
+    signal.signal(signal.SIGINT, signal_handler)
 
     """ Below is an alternative to using wait_for_daemons by keeping the main thread busy with an
         infinite loop printing out stuff to simulate other actions that can happen in the main thread """
     while True:
         # Print something to emulate the main thread doing something.
         print('chicken')
-        sleep(0.8) # Blocking wait call.
+        sleep(0.8)  # Blocking wait call.

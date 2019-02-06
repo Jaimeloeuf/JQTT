@@ -1,4 +1,9 @@
 # Default callback function for subscriptions to use if none given during subscription
+import psutil
+import paho.mqtt.client as mqtt
+import time
+
+
 def new_Msg(client, userdata, message):
     """ Arguements passed in by the subscription service:
         client: The MQTT client object
@@ -62,3 +67,18 @@ def unsub(thread_name):
     # If no such thread with the given thread name is found, return false to indicate failure
     return False # Should I raise and exception instead?
 """
+
+if __name__ == "__main__":
+
+    my_mqtt = mqtt.Client()
+    
+    my_mqtt.connect("m2m.eclipse.org", port=1883)
+    my_mqtt.loop_start()
+    
+    my_mqtt.on_message = new_Msg
+
+    my_mqtt.subscribe('IOTP/', qos=1)
+    print("Subscribed to topic")
+
+    while True:
+        time.sleep(2)

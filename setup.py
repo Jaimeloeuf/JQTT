@@ -6,7 +6,7 @@ def readme():
         return f.read()
 
 setup(name='JQTT',
-      version='1.0.0',
+      version='1.1.0',
       description='Simplified MQTT library',
 	  long_description=readme(),
       classifiers=[

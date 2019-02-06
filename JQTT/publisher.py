@@ -106,6 +106,7 @@ class Publisher:
         # Return self reference to allow method call chainings.
         return self
 
+	# Method to reconnect to the Broker
     def reconnect(self):
         self._client.reconnect()
         # Return self reference to allow method call chainings.
