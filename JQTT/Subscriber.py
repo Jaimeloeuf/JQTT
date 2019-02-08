@@ -27,7 +27,7 @@ def print_msg(message):
     """
     # print("%s : %s" % (message.topic, message.payload))
     # Just print out the message body
-    print('This default', message.payload.decode())
+    print(message.payload.decode())
 
 
 # The default callback for when the client receives a CONACK response from the server.
@@ -42,8 +42,7 @@ def connected(self, user_data, flags_dict, rc):
         *Note:  Subscribing to on_connect means that if we lose the connection
                 and reconnect then subscriptions will be renewed.
     """
-    print(
-        f'Client successfully connected to the Broker "{self._host}" with result code {str(rc)}')
+    print(f'Client successfully connected to the Broker "{self._host}" with result code {str(rc)}')
 
 
 class Subscription:
